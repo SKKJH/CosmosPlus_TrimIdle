@@ -95,7 +95,11 @@ void nvme_main()
 	p_trim_cnt = 0;
 	p_lba_save = 0;
 	trimming_flag = 0;
-	t_time = 13;
+	trim_time = 0;
+	dw_time = 0;
+	t_time = 0xffffffff;
+	f_run_flag = 0;
+	run_flag = 0;
 
 	xil_printf("!!! Wait until FTL reset complete !!! \r\n");
 
@@ -166,7 +170,6 @@ void nvme_main()
 
 				//flush grown bad block info
 				UpdateBadBlockTableForGrownBadBlock(RESERVED_DATA_BUFFER_BASE_ADDR);
-
 				xil_printf("\r\nNVMe shutdown!!!\r\n");
 			}
 		}
@@ -226,7 +229,6 @@ void nvme_main()
 			{
 			    	CheckDoneNvmeDmaReq();
 			}
-			xil_printf("TRIM START \r\n");
 			GetTrimData();
 		}
 
@@ -472,7 +474,7 @@ void nvme_main()
 #endif
 		}
 
-		if ((i_time > 5) && (do_trim_flag == 1))
+		if ((i_time > 4294967290) && (do_trim_flag == 1))
 		{
 			get_cmd = do_trim();
 		}

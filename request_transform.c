@@ -246,7 +246,7 @@ void EvictDataBufEntry(unsigned int originReqSlotTag)
 	if(dataBufMapPtr->dataBuf[dataBufEntry].dirty == DATA_BUF_DIRTY)
 	{
 		reqSlotTag = GetFromFreeReqQ();
-		virtualSliceAddr =  AddrTransWrite(dataBufMapPtr->dataBuf[dataBufEntry].logicalSliceAddr);
+		virtualSliceAddr =  AddrTransWrite(dataBufEntry);
 
 		reqPoolPtr->reqPool[reqSlotTag].reqType = REQ_TYPE_NAND;
 		reqPoolPtr->reqPool[reqSlotTag].reqCode = REQ_CODE_WRITE;
@@ -326,6 +326,7 @@ void ReqTransSliceToLowLevel()
 
 			//update meta-data of the allocated data buffer entry
 			dataBufMapPtr->dataBuf[dataBufEntry].logicalSliceAddr = reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr;
+
 			PutToDataBufHashList(dataBufEntry);
 
 			if(reqPoolPtr->reqPool[reqSlotTag].reqCode  == REQ_CODE_READ)
@@ -343,24 +344,29 @@ void ReqTransSliceToLowLevel()
 				delayBufMapPtr->delayWriteBuf[delayEntry].logicalSliceAddr = reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr;
 				PutToDelayBufHashList(delayEntry, reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr);
 				dw_cnt += 1;
-			} else {
-				//xil_printf("delay hash hit\n");
 			}
-
+			
+			dw_time = t_time;
 		    delayBufMapPtr->delayWriteBuf[delayEntry].t_time = t_time;
 			delayBufMapPtr->delayWriteBuf[delayEntry].blk0 = (reqPoolPtr->reqPool[reqSlotTag].blk0 || delayBufMapPtr->delayWriteBuf[delayEntry].blk0);
 			delayBufMapPtr->delayWriteBuf[delayEntry].blk1 = (reqPoolPtr->reqPool[reqSlotTag].blk1 || delayBufMapPtr->delayWriteBuf[delayEntry].blk1);
 			delayBufMapPtr->delayWriteBuf[delayEntry].blk2 = (reqPoolPtr->reqPool[reqSlotTag].blk2 || delayBufMapPtr->delayWriteBuf[delayEntry].blk2);
 			delayBufMapPtr->delayWriteBuf[delayEntry].blk3 = (reqPoolPtr->reqPool[reqSlotTag].blk3 || delayBufMapPtr->delayWriteBuf[delayEntry].blk3);
 
-			xil_printf("LPN : %d, Trim Time %d \n", delayBufMapPtr->delayWriteBuf[delayEntry].logicalSliceAddr, delayBufMapPtr->delayWriteBuf[delayEntry].t_time);
+			//xil_printf("LPN : %d, Trim Time %d \n", delayBufMapPtr->delayWriteBuf[delayEntry].logicalSliceAddr, delayBufMapPtr->delayWriteBuf[delayEntry].t_time);
 			//xil_printf("Valid BIT %d, %d, %d, %d\n",delayBufMapPtr->delayWriteBuf[delayEntry].blk0,delayBufMapPtr->delayWriteBuf[delayEntry].blk1,delayBufMapPtr->delayWriteBuf[delayEntry].blk2,delayBufMapPtr->delayWriteBuf[delayEntry].blk3);
 		}
+
+
 
 		//transform this slice request to nvme request
 		if(reqPoolPtr->reqPool[reqSlotTag].reqCode  == REQ_CODE_WRITE)
 		{
 			dataBufMapPtr->dataBuf[dataBufEntry].dirty = DATA_BUF_DIRTY;
+			dataBufMapPtr->dataBuf[dataBufEntry].blk0 = reqPoolPtr->reqPool[reqSlotTag].blk0;
+			dataBufMapPtr->dataBuf[dataBufEntry].blk0 = reqPoolPtr->reqPool[reqSlotTag].blk1;
+			dataBufMapPtr->dataBuf[dataBufEntry].blk0 = reqPoolPtr->reqPool[reqSlotTag].blk2;
+			dataBufMapPtr->dataBuf[dataBufEntry].blk0 = reqPoolPtr->reqPool[reqSlotTag].blk3;
 			reqPoolPtr->reqPool[reqSlotTag].reqCode = REQ_CODE_RxDMA;
 		}
 		else if(reqPoolPtr->reqPool[reqSlotTag].reqCode  == REQ_CODE_READ)

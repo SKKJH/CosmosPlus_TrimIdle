@@ -62,7 +62,11 @@
 
 
 typedef struct _DATA_BUF_ENTRY {
-	unsigned int logicalSliceAddr;
+	unsigned int logicalSliceAddr : 28;
+	unsigned int blk0;
+	unsigned int blk1;
+	unsigned int blk2;
+	unsigned int blk3;
 	unsigned int prevEntry : 16;
 	unsigned int nextEntry : 16;
 	unsigned int blockingReqTail : 16;
@@ -83,9 +87,9 @@ typedef struct _DELAY_BUF_ENTRY {
 	unsigned int blk1 : 1;
 	unsigned int blk2 : 1;
 	unsigned int blk3 : 1;
-	unsigned int hashPrevEntry : 14;
-	unsigned int hashNextEntry : 14;
-	unsigned int t_time : 4;
+	unsigned int hashPrevEntry : 16;
+	unsigned int hashNextEntry : 16;
+	unsigned int t_time;
 } DELAY_BUF_ENTRY, *P_DELAY_BUF_ENTRY;
 
 typedef struct _DELAY_BUF_MAP{
@@ -130,8 +134,9 @@ typedef struct _TEMPORARY_DATA_BUF_MAP{
 
 void InitDataBuf();
 unsigned int CheckDataBufHit(unsigned int reqSlotTag);
-unsigned int CheckDataBufHitByLBA(unsigned int startingLBA);
+unsigned int CheckDataBufHitByLSA(unsigned int logicalSliceAddr);
 unsigned int CheckDelayBufHit(unsigned int LPN);
+unsigned int CheckDelayBufTime(unsigned int LPN, unsigned int trim_time);
 
 unsigned int AllocateDataBuf();
 void UpdateDataBufEntryInfoBlockingReq(unsigned int bufEntry, unsigned int reqSlotTag);

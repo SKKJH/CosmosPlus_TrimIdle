@@ -12,21 +12,33 @@
 #include "xtime_l.h"
 
 void GetTrimData(){
-	
+
 	get_data_flag = 0;
 	unsigned int tempAddr = trimDevAddr;
-
 	for (int i = trim_cnt; i < trim_cnt + nr; i++)
-	{
-	    unsigned int *ptr = (unsigned int*)tempAddr;
-		dmRangePtr->dmRange[i].ContextAttributes.value = *(ptr);
-		dmRangePtr->dmRange[i].lengthInLogicalBlocks = *(ptr + 1);
-		dmRangePtr->dmRange[i].startingLBA[0] = *(ptr + 2);
-		dmRangePtr->dmRange[i].startingLBA[1] = *(ptr + 3);
-		//xil_printf(" %dth TRIM CMD : sLBA %d and %d blks\n",i, dmRangePtr->dmRange[i].startingLBA[0] ,dmRangePtr->dmRange[i].lengthInLogicalBlocks );
-	}
+    {
+        unsigned int *ptr = (unsigned int*)tempAddr;        
+		if (((*(ptr)<0)||(*(ptr)>0xfff0))||((*(ptr+1)<0)||(*(ptr+1)>0xfff0))||((*(ptr+2)< 0)||(*(ptr+2)>0xfff0))||((*(ptr+3)<0)||(*(ptr+3)>0xfff0)))
+		{
+            dmRangePtr->dmRange[i].ContextAttributes.value = 0;
+            dmRangePtr->dmRange[i].lengthInLogicalBlocks = 1;
+            dmRangePtr->dmRange[i].startingLBA[0] = 0;
+            dmRangePtr->dmRange[i].startingLBA[1] = 0;
+        }
+        else {
+            dmRangePtr->dmRange[i].ContextAttributes.value = *(ptr);
+            dmRangePtr->dmRange[i].lengthInLogicalBlocks = *(ptr+1);
+            dmRangePtr->dmRange[i].startingLBA[0] = *(ptr + 2);
+            dmRangePtr->dmRange[i].startingLBA[1] = *(ptr + 3);
+        }
+        //xil_printf(" %dth TRIM CMD : sLBA %d and %d blks\n",i, dmRangePtr->dmRange[i].startingLBA[0] ,dmRangePtr->dmRange[i].lengthInLogicalBlocks );
+        tempAddr += sizeof(unsigned int)*4;
+    }
+    //XTime_GetTime(&tEtime);
+    //dma_time += (tEtime - tStime)*3;
+
 	trim_cnt += nr;
-	if (t_time == 13){
+	if (t_time == 0xffffffff) {
 		t_time = 0;
 	}
 	else {
@@ -204,16 +216,10 @@ unsigned int do_trim(){
 		}
 
 		for (unsigned int j = p_lba_save; (j + 4) <= startLba + templength; j += 4) {
-			//xil_printf("p_lba_save %d\n",p_lba_save);
 			int lsa = (p_lba_save / 4);
-			//xil_printf("17\n");
 			TRIM(lsa, 1, 1, 1, 1, i);
-			//check new cmd arrived
-			sleep(5);
-			//xil_printf("sleep end\r\n");
 			check_cmdValid = check_nvme_cmd_come();
 			if (check_cmdValid == 1) {
-				//xil_printf("get new cmd \r\n");
 				p_lba_save += 4;
 				trimming_flag = 1;
 				return 1;
@@ -253,15 +259,131 @@ unsigned int do_trim(){
 	do_trim_flag = 0;
 	trimming_flag = 0;
 	dw_cnt = 0;
+	dw_time = 0;
 	trim_cnt = 0;
-	t_time = 0;
+	t_time = 4294967290;
 	p_trim_cnt = 0;
 	p_lba_save = 0;
-	xil_printf("trim done\r\n");
+	
+	//Initialize delayWritebuffer
+	for (unsigned int i = 0; i < AVAILABLE_DATA_BUFFER_ENTRY_COUNT; i++)
+	{
+		delayBufHashTablePtr->delayBufHash[i].headEntry = DATA_BUF_NONE;
+		delayBufHashTablePtr->delayBufHash[i].tailEntry = DATA_BUF_NONE;
+	}
+
+	//xil_printf("trim done\r\n");
 	return 0;
 }
 
 
 void TRIM(unsigned int LPN, unsigned int BLK0, unsigned int BLK1, unsigned int BLK2, unsigned int BLK3, unsigned int trim_time){
-	xil_printf("LPN : %d, Trim Time : %d BIT : %d%d%d%d\n",LPN, trim_time, BLK0, BLK1, BLK2, BLK3);
+	//Considering Delayed Write Buffer
+   	if (dw_time >= trim_time){
+		unsigned int delayEntry = CheckDelayBufTime(LPN,trim_time);
+		if (delayEntry != DATA_BUF_FAIL) {
+			if ((BLK0 == 1) && (delayBufMapPtr->delayWriteBuf[delayEntry].blk0 == 0)) {
+				BLK0 = 1;
+			}
+			else {
+				BLK0 = 0;
+			}
+			if ((BLK1 == 1) && (delayBufMapPtr->delayWriteBuf[delayEntry].blk1 == 0)) {
+				BLK1 = 1;
+			}
+			else {
+				BLK1 = 0;
+			}
+			if ((BLK2 == 1) && (delayBufMapPtr->delayWriteBuf[delayEntry].blk1 == 0)) {
+				BLK2 = 1;
+			}
+			else {
+				BLK2 = 0;
+			}
+			if ((BLK3 == 1) && (delayBufMapPtr->delayWriteBuf[delayEntry].blk1 == 0)) {
+				BLK3 = 1;
+			}
+			else {
+				BLK3 = 0;
+			}
+		}
+    }
+
+	// write buffer
+	unsigned int bufEntry = CheckDataBufHitByLSA(LPN);
+	if (bufEntry != DATA_BUF_FAIL){
+	    if (BLK0 == 1){
+	    	dataBufMapPtr->dataBuf[bufEntry].blk0 = 0;
+	    }
+		if (BLK1 == 1) {
+			dataBufMapPtr->dataBuf[bufEntry].blk1 = 0;
+		}
+		if (BLK2 == 1) {
+			dataBufMapPtr->dataBuf[bufEntry].blk2 = 0;
+		}
+		if (BLK3 == 1) {
+	    	dataBufMapPtr->dataBuf[bufEntry].blk3 = 0;
+		}
+	    if((dataBufMapPtr->dataBuf[bufEntry].blk0 == 0) && (dataBufMapPtr->dataBuf[bufEntry].blk1 == 0) && (dataBufMapPtr->dataBuf[bufEntry].blk2 == 0) && (dataBufMapPtr->dataBuf[bufEntry].blk3 == 0))
+		{
+			unsigned int prevBufEntry, nextBufEntry;
+			prevBufEntry = dataBufMapPtr->dataBuf[bufEntry].prevEntry;
+			nextBufEntry = dataBufMapPtr->dataBuf[bufEntry].nextEntry;
+
+			if (prevBufEntry != DATA_BUF_NONE && nextBufEntry != DATA_BUF_NONE)
+          	{
+				dataBufMapPtr->dataBuf[prevBufEntry].nextEntry = nextBufEntry;
+				dataBufMapPtr->dataBuf[nextBufEntry].prevEntry = prevBufEntry;
+				nextBufEntry = DATA_BUF_NONE;
+				prevBufEntry = dataBufLruList.tailEntry;
+				dataBufMapPtr->dataBuf[dataBufLruList.tailEntry].nextEntry = bufEntry;
+				dataBufLruList.tailEntry = bufEntry;
+			}
+			else if (prevBufEntry != DATA_BUF_NONE && nextBufEntry == DATA_BUF_NONE)
+			{
+				dataBufLruList.tailEntry = bufEntry;
+			}
+			else if(prevBufEntry == DATA_BUF_NONE && nextBufEntry != DATA_BUF_NONE)
+			{
+				dataBufMapPtr->dataBuf[nextBufEntry].prevEntry = DATA_BUF_NONE;
+				dataBufLruList.headEntry = nextBufEntry;
+				prevBufEntry = dataBufLruList.tailEntry;
+				dataBufMapPtr->dataBuf[dataBufLruList.tailEntry].nextEntry = bufEntry;
+				dataBufLruList.tailEntry = bufEntry;
+			}
+			else
+			{
+				prevBufEntry = DATA_BUF_NONE;
+				nextBufEntry = DATA_BUF_NONE;
+				dataBufLruList.headEntry = bufEntry;
+				dataBufLruList.tailEntry = bufEntry;
+			}
+			SelectiveGetFromDataBufHashList(bufEntry);
+			dataBufMapPtr->dataBuf[bufEntry].blockingReqTail = REQ_SLOT_TAG_NONE;
+			dataBufMapPtr->dataBuf[bufEntry].dirty = DATA_BUF_CLEAN;
+			dataBufMapPtr->dataBuf[bufEntry].reserved0 = 0;
+	    }
+	}
+
+	// L2P
+	unsigned int virtualSliceAddr = logicalSliceMapPtr->logicalSlice[LPN].virtualSliceAddr;
+	if(virtualSliceAddr != VSA_NONE) {
+		if (BLK0 == 1) {
+		    logicalSliceMapPtr->logicalSlice[LPN].blk0 = 0;
+		}
+		if (BLK1 == 1) {
+		    logicalSliceMapPtr->logicalSlice[LPN].blk1 = 0;
+		}
+		if (BLK2 == 1) {
+		    logicalSliceMapPtr->logicalSlice[LPN].blk2 = 0;
+		}
+		if (BLK3 == 1) {
+		    logicalSliceMapPtr->logicalSlice[LPN].blk3 = 0;
+		}
+		if((logicalSliceMapPtr->logicalSlice[LPN].blk0 == 0)&&(logicalSliceMapPtr->logicalSlice[LPN].blk1 == 0)&&(logicalSliceMapPtr->logicalSlice[LPN].blk2 == 0)&&(logicalSliceMapPtr->logicalSlice[LPN].blk3 == 0)) {
+		    InvalidateOldVsa(LPN);
+		}
+	}
 }
+
+

@@ -48,6 +48,8 @@
 //   - First draft
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "xtime_l.h"
+
 #ifndef __NVME_H_
 #define __NVME_H_
 
@@ -811,7 +813,7 @@ typedef struct _DATASET_MANAGEMENT_RANGE
 } DATASET_MANAGEMENT_RANGE, *P_DATASET_MANAGEMENT_RANGE;
 
 typedef struct _DSM_RANGE{
-  DATASET_MANAGEMENT_RANGE dmRange[3000];  
+  DATASET_MANAGEMENT_RANGE dmRange[300000];
 } DSM_RANGE, *P_DSM_RANGE;
 #pragma pack(pop)
 
@@ -856,5 +858,11 @@ typedef struct _NVME_STATUS
 } NVME_CONTEXT;
 
 unsigned int get_cmd;
-
+unsigned int trim_count;
+XTime trim_time;
+XTime default_time;
+XTime trim_stime;
+XTime trim_etime;
+int f_run_flag;
+int run_flag;
 #endif	//__NVME_H_

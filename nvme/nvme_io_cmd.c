@@ -63,6 +63,7 @@
 #include "../request_allocation.h"
 #include "../request_format.h"
 #include "../trim.h"
+#include "xtime_l.h"
 
 void handle_nvme_io_read(unsigned int cmdSlotTag, NVME_IO_COMMAND *nvmeIOCmd)
 {
@@ -99,7 +100,8 @@ void handle_nvme_io_dsm(unsigned int cmdSlotTag, NVME_IO_COMMAND *nvmeIOCmd)
 
 	if (dmInfo11.AD == 1)
 	{
-		xil_printf("trim command\r\n");
+		//xil_printf("trim command\r\n");
+		XTime_GetTime(&trim_stime);
 		nr = dmInfo10.NR + 1;
 		get_data_flag = 1;
 
@@ -157,8 +159,9 @@ void handle_nvme_io_cmd(NVME_COMMAND *nvmeCmd)
 	{	
 	    case IO_NVM_DATASET_MANAGEMENT:
 		{
-		    PRINT("IO DSM Command\r\n");
+		    //xil_printf("IO DSM Command\r\n");
 			handle_nvme_io_dsm(nvmeCmd->cmdSlotTag,nvmeIOCmd);
+			trim_count += 1;
 			break;
 		}
 		case IO_NVM_FLUSH:
@@ -171,7 +174,7 @@ void handle_nvme_io_cmd(NVME_COMMAND *nvmeCmd)
 		}
 		case IO_NVM_WRITE:
 		{
-			PRINT("IO Write Command\r\n");
+			//xil_printf("IO Write Command\r\n");
 			handle_nvme_io_write(nvmeCmd->cmdSlotTag, nvmeIOCmd);
 			break;
 		}

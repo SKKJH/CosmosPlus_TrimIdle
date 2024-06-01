@@ -645,10 +645,11 @@ unsigned int AddrTransRead(unsigned int logicalSliceAddr)
 		assert(!"[WARNING] Logical address is larger than maximum logical address served by SSD [WARNING]");
 }
 
-unsigned int AddrTransWrite(unsigned int logicalSliceAddr)
+unsigned int AddrTransWrite(unsigned int dataBufEntry)
 {
-	unsigned int virtualSliceAddr;
+	unsigned int virtualSliceAddr, logicalSliceAddr;
 
+	logicalSliceAddr = dataBufMapPtr->dataBuf[dataBufEntry].logicalSliceAddr;
 	if(logicalSliceAddr < SLICES_PER_SSD)
 	{
 		InvalidateOldVsa(logicalSliceAddr);
@@ -656,6 +657,10 @@ unsigned int AddrTransWrite(unsigned int logicalSliceAddr)
 		virtualSliceAddr = FindFreeVirtualSlice();
 
 		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].virtualSliceAddr = virtualSliceAddr;
+		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].blk0 = dataBufMapPtr->dataBuf[dataBufEntry].blk0;
+		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].blk1 = dataBufMapPtr->dataBuf[dataBufEntry].blk1;
+		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].blk2 = dataBufMapPtr->dataBuf[dataBufEntry].blk2;
+		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].blk3 = dataBufMapPtr->dataBuf[dataBufEntry].blk3;
 		virtualSliceMapPtr->virtualSlice[virtualSliceAddr].logicalSliceAddr = logicalSliceAddr;
 
 		return virtualSliceAddr;
@@ -777,6 +782,11 @@ void InvalidateOldVsa(unsigned int logicalSliceAddr)
 		SelectiveGetFromGcVictimList(dieNo, blockNo);
 		virtualBlockMapPtr->block[dieNo][blockNo].invalidSliceCnt++;
 		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].virtualSliceAddr = VSA_NONE;
+		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].blk0 = 0;
+		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].blk1 = 0;
+		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].blk2 = 0;
+		logicalSliceMapPtr->logicalSlice[logicalSliceAddr].blk3 = 0;
+
 
 		PutToGcVictimList(dieNo, blockNo, virtualBlockMapPtr->block[dieNo][blockNo].invalidSliceCnt);
 	}

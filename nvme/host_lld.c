@@ -179,7 +179,6 @@ unsigned int check_nvme_cmd_come()
     NVME_CMD_FIFO_REG nvmeReg;
 	
 	nvmeReg.dword = IO_READ32(NVME_CMD_FIFO_REG_ADDR);
-	//xil_printf("message copy\r\n");
 	
 	global_nvmeReg.dword = nvmeReg.dword;
 	

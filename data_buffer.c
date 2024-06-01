@@ -72,6 +72,10 @@ void InitDataBuf()
 	for(bufEntry = 0; bufEntry < AVAILABLE_DATA_BUFFER_ENTRY_COUNT; bufEntry++)
 	{
 		dataBufMapPtr->dataBuf[bufEntry].logicalSliceAddr = LSA_NONE;
+		dataBufMapPtr->dataBuf[bufEntry].blk0 = 0;
+		dataBufMapPtr->dataBuf[bufEntry].blk1 = 0;
+		dataBufMapPtr->dataBuf[bufEntry].blk2 = 0;
+		dataBufMapPtr->dataBuf[bufEntry].blk3 = 0;
 		dataBufMapPtr->dataBuf[bufEntry].prevEntry = bufEntry-1;
 		dataBufMapPtr->dataBuf[bufEntry].nextEntry = bufEntry+1;
 		dataBufMapPtr->dataBuf[bufEntry].dirty = DATA_BUF_CLEAN;
@@ -99,7 +103,7 @@ void InitDataBuf()
 		delayBufMapPtr->delayWriteBuf[bufEntry].hashNextEntry = DELAY_BUF_NONE;
 	}
 
-	for (bufEntry = 0; bufEntry < 3000; bufEntry++)
+	for (bufEntry = 0; bufEntry < 300000; bufEntry++)
 	{
 		dmRangePtr->dmRange[bufEntry].ContextAttributes.value = 0;
 		dmRangePtr->dmRange[bufEntry].lengthInLogicalBlocks = 0;
@@ -138,16 +142,13 @@ unsigned int CheckDelayBufHit(unsigned int LPN)
 unsigned int CheckDelayBufTime(unsigned int LPN, unsigned int trim_time)
 {
 	unsigned int bufEntry = delayBufHashTablePtr->delayBufHash[FindDataBufHashTableEntry(LPN)].headEntry;
-	//xil_printf("first Entry %d\n",bufEntry);
 	while(bufEntry != DATA_BUF_NONE)
 	{
 		if ((delayBufMapPtr->delayWriteBuf[bufEntry].logicalSliceAddr == LPN) && (delayBufMapPtr->delayWriteBuf[bufEntry].t_time >= trim_time)) {
-			//xil_printf("return Entry %d\n",bufEntry);
 			return bufEntry;
 		}
 		else {
 		    bufEntry = delayBufMapPtr->delayWriteBuf[bufEntry].hashNextEntry;
-			//xil_printf("next Entry %d\n",bufEntry);
 		}
 	}
 	return DATA_BUF_FAIL;
@@ -209,9 +210,8 @@ unsigned int CheckDataBufHit(unsigned int reqSlotTag)
 	return DATA_BUF_FAIL;
 }
 
-unsigned int CheckDataBufHitByLBA(unsigned int startingLBA)
-{
-	unsigned int logicalSliceAddr = startingLBA / NVME_BLOCKS_PER_SLICE;
+unsigned int CheckDataBufHitByLSA(unsigned int logicalSliceAddr) {
+
 	unsigned int bufEntry;
 
 	bufEntry = dataBufHashTablePtr->dataBufHash[FindDataBufHashTableEntry(logicalSliceAddr)].headEntry;
@@ -331,7 +331,7 @@ void PutToDelayBufHashList(unsigned int dw_cnt, unsigned int LPN)
 {
 	unsigned int hashEntry;
 	hashEntry = FindDataBufHashTableEntry(LPN);
-	if(delayBufHashTablePtr->delayBufHash[hashEntry].tailEntry != DATA_BUF_NONE)
+	if(delayBufHashTablePtr->delayBufHash[hashEntry].tailEntry != DELAY_BUF_NONE)
 	{
 		delayBufMapPtr->delayWriteBuf[dw_cnt].hashPrevEntry = delayBufHashTablePtr->delayBufHash[hashEntry].tailEntry;
 		delayBufMapPtr->delayWriteBuf[dw_cnt].hashNextEntry = DELAY_BUF_NONE;
