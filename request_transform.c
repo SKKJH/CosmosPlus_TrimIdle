@@ -90,13 +90,12 @@ void ReqTransNvmeToSliceForDSM(unsigned int cmdSlotTag, unsigned int nr)
 	{
 		reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr = LSA_DSM;
 		trim_LSA = LSA_DSM - 1;
-		trim_flag++;
+		trim_flag = 1;
 	}
 	else
 	{
 		reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr = trim_LSA;
 		trim_LSA = LSA_DSM - 1;
-		trim_flag++;
 	}
 	reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.startIndex = 0;
 	reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.nvmeBlockOffset = 0;
@@ -384,12 +383,15 @@ void ReqTransSliceToLowLevel()
 			dataBufMapPtr->dataBuf[dataBufEntry].blk1 = reqPoolPtr->reqPool[reqSlotTag].blk1;
 			dataBufMapPtr->dataBuf[dataBufEntry].blk2 = reqPoolPtr->reqPool[reqSlotTag].blk2;
 			dataBufMapPtr->dataBuf[dataBufEntry].blk3 = reqPoolPtr->reqPool[reqSlotTag].blk3;
-			reqPoolPtr->reqPool[reqSlotTag].reqCode = REQ_CODE_RxDMA;
+//			reqPoolPtr->reqPool[reqSlotTag].reqCode = REQ_CODE_RxDMA;
 		}
 		else if(reqPoolPtr->reqPool[reqSlotTag].reqCode  == REQ_CODE_READ)
 			reqPoolPtr->reqPool[reqSlotTag].reqCode = REQ_CODE_TxDMA;
 		else if(reqPoolPtr->reqPool[reqSlotTag].reqCode  == REQ_CODE_DSM)
+		{
+//			reqPoolPtr->reqPool[reqSlotTag].reqCode = REQ_CODE_RxDMA;
 			dataBufMapPtr->dataBuf[dataBufEntry].dirty = DATA_BUF_CLEAN;
+		}
 		else
 			assert(!"[WARNING] Not supported reqCode. [WARNING]");
 
@@ -538,6 +540,11 @@ void SelectLowLevelReqQ(unsigned int reqSlotTag)
 	{
 		if((reqPoolPtr->reqPool[reqSlotTag].reqType  == REQ_TYPE_NVME_DMA))
 		{
+//			if(trim_flag == 1)
+//			{
+//				if (reqPoolPtr->reqPool[reqSlotTag].ioType == REQ_CODE_DSM)
+//					xil_printf("dsm command2\r\n");
+//			}
 			IssueNvmeDmaReq(reqSlotTag);
 			PutToNvmeDmaReqQ(reqSlotTag);
 		}
@@ -630,6 +637,11 @@ void ReleaseBlockedByBufDepReq(unsigned int reqSlotTag)
 
 		if(reqPoolPtr->reqPool[targetReqSlotTag].reqType == REQ_TYPE_NVME_DMA)
 		{
+//			if(trim_flag == 1)
+//			{
+//				if (reqPoolPtr->reqPool[reqSlotTag].ioType == REQ_CODE_DSM)
+//					xil_printf("dsm command3\r\n");
+//			}
 			IssueNvmeDmaReq(targetReqSlotTag);
 			PutToNvmeDmaReqQ(targetReqSlotTag);
 		}
@@ -706,7 +718,7 @@ void IssueNvmeDmaReq(unsigned int reqSlotTag)
 	devAddr = GenerateDataBufAddr(reqSlotTag);
 	numOfNvmeBlock = 0;
 
-	if((reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_RxDMA)||(reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_DSM))
+	if((reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_WRITE)||(reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_DSM))
 	{
 		while(numOfNvmeBlock < reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.numOfNvmeBlock)
 		{
@@ -828,13 +840,13 @@ void TRIM (unsigned int lba, unsigned int blk0, unsigned int blk1, unsigned int 
 
 void PerformDeallocation(unsigned int reqSlotTag)
 {
-
 	unsigned int slsa, elsa, start_index, end_index, tempval, tempval2;
 	unsigned long long start_mask, end_mask;
 
 	unsigned int tail = dsmRangePtr->tail;
 	unsigned int *devAddr = (unsigned int*)GenerateDataBufAddr(reqSlotTag);
 	unsigned int nr = reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.nr;
+//	xil_printf("nr : %d\r\n",nr);
 
 	for (int i=tail; i<=(tail+nr); i++)
 	{
@@ -904,7 +916,9 @@ void CheckDoneNvmeDmaReq()
 	{
 		prevReq = reqPoolPtr->reqPool[reqSlotTag].prevReq;
 
-		if(reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_RxDMA)
+		//if(reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_RxDMA)
+//		if((reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_WRITE)||(reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_DSM))
+		if(reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_WRITE)
 		{
 			if(!rxDone)
 				rxDone = check_auto_rx_dma_partial_done(reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.reqTail , reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.overFlowCnt);
@@ -920,9 +934,19 @@ void CheckDoneNvmeDmaReq()
 			if(txDone)
 				SelectiveGetFromNvmeDmaReqQ(reqSlotTag);
 		}
-		if (reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_DSM)
-		{	//if DMA for trim is done, do trim
-			PerformDeallocation(reqSlotTag);
+		if (trim_flag == 1)
+		{
+			if (reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_DSM)
+			{	//if DMA for trim is done, do trim
+				PerformDeallocation(reqSlotTag);
+			}
+			else if (reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_WRITE)
+			{
+				int lpn = reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr;
+				long long unsigned mask = ~(1ULL << lpn%64);
+				asyncTrimBitMapPtr->trimBitMap[lpn/64] &= mask;
+
+			}
 		}
 		reqSlotTag = prevReq;
 	}

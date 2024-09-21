@@ -106,38 +106,40 @@ void handle_nvme_io_write(unsigned int cmdSlotTag, NVME_IO_COMMAND *nvmeIOCmd)
 	startLba[1] = nvmeIOCmd->dword[11];
 	nlb = writeInfo12.NLB;
 
-	if (trim_flag != 0)
-	{
-		slsa = startLba[0]/4;
-//		xil_printf("slsa:%d\r\n",slsa);
-		elsa = (startLba[0] + nlb - 1)/4;
-//		xil_printf("elsa:%d\r\n",elsa);
-		start_index = slsa/64;
-//		xil_printf("start_index:%d\r\n",start_index);
-		end_index = elsa/64;
-//		xil_printf("end_index:%d\r\n",end_index);
-
-		start_mask = ~0ULL << (slsa % 64);
-		end_mask = ~0ULL >> (64 - ((elsa % 64)+1));
-
-		if (start_index == end_index)
-		{
-//			xil_printf("here1\r\n");
-			asyncTrimBitMapPtr->trimBitMap[start_index] &= ~(start_mask & end_mask);
-		}
-		else
-		{
-//			xil_printf("here2\r\n");
-			asyncTrimBitMapPtr->trimBitMap[start_index] &= ~start_mask;
-			asyncTrimBitMapPtr->trimBitMap[end_index] &= ~end_mask;
-			//for (int i = start_index + 1; i < end_index; i++)
-			while((start_index+1) < end_index)
-			{
-//				xil_printf("here3\r\n");
-				asyncTrimBitMapPtr->trimBitMap[++start_index] &= 0ULL;
-			}
-		}
-	}
+//	if (nr_sum != 0)
+//	{
+//		slsa = startLba[0]/4;
+//		xil_printf("slsa:%d\r\n", slsa);
+//		xil_printf("nlb:%d\r\n", nlb);
+//		xil_printf("\n");
+//		elsa = (startLba[0] + nlb - 1)/4;
+////		xil_printf("elsa:%d\r\n",elsa);
+//		start_index = slsa/64;
+////		xil_printf("start_index:%d\r\n",start_index);
+//		end_index = elsa/64;
+////		xil_printf("end_index:%d\r\n",end_index);
+//
+//		start_mask = ~0ULL << (slsa % 64);
+//		end_mask = ~0ULL >> (64 - ((elsa % 64)+1));
+//
+//		if (start_index == end_index)
+//		{
+////			xil_printf("here1\r\n");
+//			asyncTrimBitMapPtr->trimBitMap[start_index] &= ~(start_mask & end_mask);
+//		}
+//		else
+//		{
+////			xil_printf("here2\r\n");
+//			asyncTrimBitMapPtr->trimBitMap[start_index] &= ~start_mask;
+//			asyncTrimBitMapPtr->trimBitMap[end_index] &= ~end_mask;
+//			//for (int i = start_index + 1; i < end_index; i++)
+//			while((start_index+1) < end_index)
+//			{
+////				xil_printf("here3\r\n");
+//				asyncTrimBitMapPtr->trimBitMap[++start_index] &= 0ULL;
+//			}
+//		}
+//	}
 
 
 	ASSERT(startLba[0] < storageCapacity_L && (startLba[1] < STORAGE_CAPACITY_H || startLba[1] == 0));
@@ -171,13 +173,15 @@ void handle_nvme_io_dataset_management(unsigned int cmdSlotTag, NVME_IO_COMMAND 
 	}
 }
 
-void handle_asyncTrim()
+void handle_asyncTrim(int forced)
 {
 	int blk0, blk1, blk2, blk3, tempSlba , tempNlb;
 	unsigned int head, nlb, slba;
+	int temp = nr_sum;
 
-	for (int i=0; i<nr_sum; i++)
+	for (int i=0; i<temp; i++)
 	{
+//		xil_printf("nr_sum : %d\r\n",nr_sum);
 		head = dsmRangePtr->head;
 		slba = dsmRangePtr->dmRange[head].startingLBA[0];
 		nlb = dsmRangePtr->dmRange[head].lengthInLogicalBlocks;
@@ -272,6 +276,17 @@ void handle_asyncTrim()
 		}
 		TRIM(slba, blk0, blk1, blk2, blk3);
 		dsmRangePtr->head = (dsmRangePtr->head + 1)%3000;
+		nr_sum--;
+
+		if (forced == 0)
+		{
+			cmd_by_trim = check_nvme_cmd_come();
+			if(cmd_by_trim == 1)
+			{
+//				xil_printf("new io cmd requested\r\n");
+				return;
+			}
+		}
 	}
 
 	trim_flag = 0;

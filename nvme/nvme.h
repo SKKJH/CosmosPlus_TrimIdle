@@ -862,8 +862,9 @@ typedef struct _NVME_STATUS
 
 unsigned int trim_flag;
 unsigned int trim_LSA;
-unsigned int nr_sum;
+int nr_sum;
 unsigned int gc_cnt;
 unsigned int wr_cnt;
+int cmd_by_trim;
 extern P_DSM_RANGE dsmRangePtr;
 #endif	//__NVME_H_

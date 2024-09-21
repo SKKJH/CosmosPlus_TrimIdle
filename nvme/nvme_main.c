@@ -80,6 +80,7 @@ void nvme_main()
 	gc_cnt = 0;
 	wr_cnt = 0;
 	nr_sum = 0;
+	cmd_by_trim = 0;
 
 	xil_printf("!!! Wait until FTL reset complete !!! \r\n");
 
@@ -203,10 +204,10 @@ void nvme_main()
 		if(trim_flag != 0)
 		{
 			time_cnt++;
-			if (time_cnt == 40000000)
+			if (time_cnt == 20000000)
 			{
 				time_cnt = 0;
-				handle_asyncTrim();
+				handle_asyncTrim(0);
 			}
 		}
 	}

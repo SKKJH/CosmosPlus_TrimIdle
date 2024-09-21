@@ -326,6 +326,11 @@ void SelectiveGetFromBlockedByRowAddrDepReqQ(unsigned int reqSlotTag, unsigned i
 
 void PutToNvmeDmaReqQ(unsigned int reqSlotTag)
 {
+//	if(trim_flag == 1)
+//	{
+//		if (reqPoolPtr->reqPool[reqSlotTag].ioType == REQ_CODE_DSM)
+//			xil_printf("dsm command\r\n");
+//	}
 	if(nvmeDmaReqQ.tailReq != REQ_SLOT_TAG_NONE)
 	{
 		reqPoolPtr->reqPool[reqSlotTag].prevReq = nvmeDmaReqQ.tailReq;
