@@ -47,6 +47,7 @@
 
 #include <assert.h>
 #include "memory_map.h"
+#include "nvme/nvme_io_cmd.h"
 #include "xil_printf.h"
 
 P_LOGICAL_SLICE_MAP logicalSliceMapPtr;
@@ -697,6 +698,11 @@ unsigned int FindFreeVirtualSlice()
 			virtualDieMapPtr->die[dieNo].currentBlock = currentBlock;
 		else
 		{
+			if(trim_flag != 0)
+			{
+				handle_asyncTrim(1);
+			}
+
 			GarbageCollection(dieNo);
 			currentBlock = virtualDieMapPtr->die[dieNo].currentBlock;
 
