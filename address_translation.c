@@ -700,7 +700,9 @@ unsigned int FindFreeVirtualSlice()
 		{
 			if(trim_flag != 0)
 			{
+//				xil_printf("gc trim start\r\n");
 				handle_asyncTrim(1);
+//				xil_printf("gc trim end\r\n");
 			}
 
 			GarbageCollection(dieNo);

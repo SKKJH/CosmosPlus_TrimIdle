@@ -840,25 +840,29 @@ void TRIM (unsigned int lba, unsigned int blk0, unsigned int blk1, unsigned int 
 
 void PerformDeallocation(unsigned int reqSlotTag)
 {
-	unsigned int slsa, elsa, start_index, end_index, tempval, tempval2;
+	unsigned int slsa, elsa, start_index, end_index, temp;
 	unsigned long long start_mask, end_mask;
-
+	int tempval, tempval2;
 	unsigned int tail = dsmRangePtr->tail;
 	unsigned int *devAddr = (unsigned int*)GenerateDataBufAddr(reqSlotTag);
 	unsigned int nr = reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.nr;
-//	xil_printf("nr : %d\r\n",nr);
-
-	for (int i=tail; i<=(tail+nr); i++)
+//	xil_printf("PerformDeallocation nr : %d\r\n",nr);
+	temp = tail;
+	for (int i=temp; i<=(temp+nr); i++)
 	{
 		tempval = *(devAddr + 1);
 		tempval2 = *(devAddr + 2);
-		if (((SLICES_PER_SSD * 4) < tempval) || ((SLICES_PER_SSD * 4) < tempval2))
+//		xil_printf("tempval1: %d\r\n", tempval);
+//		xil_printf("tempval2: %d\r\n", tempval2);
+		if (((SLICES_PER_SSD * 4) < tempval) || ((SLICES_PER_SSD * 4) < tempval2) || (tempval<0)||(tempval2<0))
 		{
 			break;
 		}
 		nr_sum++;
 		dsmRangePtr->dmRange[i].lengthInLogicalBlocks = tempval;
 		dsmRangePtr->dmRange[i].startingLBA[0] = tempval2;
+//		xil_printf("saved tempval1: %d\r\n", dsmRangePtr->dmRange[i].startingLBA[0]);
+//		xil_printf("saved tempval2: %d\r\n", dsmRangePtr->dmRange[i].lengthInLogicalBlocks);
 		slsa = dsmRangePtr->dmRange[i].startingLBA[0]/4;
 		elsa = (dsmRangePtr->dmRange[i].startingLBA[0] + dsmRangePtr->dmRange[i].lengthInLogicalBlocks - 1)/4;
 
@@ -890,6 +894,7 @@ void PerformDeallocation(unsigned int reqSlotTag)
 		dsmRangePtr->tail = (dsmRangePtr->tail + 1)%3000;
 		if(dsmRangePtr->tail == dsmRangePtr->head)
 		{
+//			xil_printf("tail head meet \r\n");
 			if(dsmRangePtr->head==2999)
 			{
 				dsmRangePtr->head = 0;

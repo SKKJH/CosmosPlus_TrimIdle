@@ -176,7 +176,7 @@ void handle_nvme_io_dataset_management(unsigned int cmdSlotTag, NVME_IO_COMMAND 
 void handle_asyncTrim(int forced)
 {
 	int blk0, blk1, blk2, blk3, tempSlba , tempNlb;
-	unsigned int head, nlb, slba;
+	int head, nlb, slba;
 	int temp = nr_sum;
 
 	for (int i=0; i<temp; i++)
@@ -185,108 +185,112 @@ void handle_asyncTrim(int forced)
 		head = dsmRangePtr->head;
 		slba = dsmRangePtr->dmRange[head].startingLBA[0];
 		nlb = dsmRangePtr->dmRange[head].lengthInLogicalBlocks;
-
-		if ((slba % 4) == 0)
+//		xil_printf("nlb : %d\r\n",nlb);
+//		xil_printf("slba : %d\r\n",slba);
+		if((nlb>0)&&(slba>0)&&(nlb<(SLICES_PER_SSD * 4))&&(slba<(SLICES_PER_SSD * 4)))
 		{
-			if(nlb == 1)
-				blk0 = 0;
-			else if (nlb == 2)
+			if ((slba % 4) == 0)
 			{
-				blk0 = 0;
-				blk1 = 0;
+				if(nlb == 1)
+					blk0 = 0;
+				else if (nlb == 2)
+				{
+					blk0 = 0;
+					blk1 = 0;
+				}
+				else if (nlb == 3)
+				{
+					blk0 = 0;
+					blk1 = 0;
+					blk2 = 0;
+				}
+				else
+				{
+					blk0 = 0;
+					blk1 = 0;
+					blk2 = 0;
+					blk3 = 0;
+				}
 			}
-			else if (nlb == 3)
+			else if ((slba % 4) == 1)
 			{
-				blk0 = 0;
-				blk1 = 0;
-				blk2 = 0;
+				if(nlb == 1)
+					blk1 = 0;
+				else if (nlb == 2)
+				{
+					blk1 = 0;
+					blk2 = 0;
+				}
+				else
+				{
+					blk1 = 0;
+					blk2 = 0;
+					blk3 = 0;
+				}
+			}
+			else if ((slba % 4) == 2)
+			{
+				if(nlb == 1)
+					blk2 = 0;
+				else
+				{
+					blk2 = 0;
+					blk3 = 0;
+				}
 			}
 			else
 			{
-				blk0 = 0;
-				blk1 = 0;
-				blk2 = 0;
 				blk3 = 0;
 			}
-		}
-		else if ((slba % 4) == 1)
-		{
-			if(nlb == 1)
-				blk1 = 0;
-			else if (nlb == 2)
-			{
-				blk1 = 0;
-				blk2 = 0;
-			}
-			else
-			{
-				blk1 = 0;
-				blk2 = 0;
-				blk3 = 0;
-			}
-		}
-		else if ((slba % 4) == 2)
-		{
-			if(nlb == 1)
-				blk2 = 0;
-			else
-			{
-				blk2 = 0;
-				blk3 = 0;
-			}
-		}
-		else
-		{
-			blk3 = 0;
-		}
 
-		TRIM(slba, blk0, blk1, blk2, blk3);
-
-		tempSlba = slba + (4 - (slba % 4));
-		tempNlb = nlb - (4 - (slba % 4));
-		nlb = tempNlb;
-		slba = tempSlba;
-
-		while(nlb > 4)
-		{
 			TRIM(slba, blk0, blk1, blk2, blk3);
-			slba = slba + 4;
-			nlb = nlb - 4;
-		}
 
-		blk0 = 1;
-		blk1 = 1;
-		blk2 = 1;
-		blk3 = 1;
+			tempSlba = slba + (4 - (slba % 4));
+			tempNlb = nlb - (4 - (slba % 4));
+			nlb = tempNlb;
+			slba = tempSlba;
 
-		if (nlb == 1)
-		{
-			blk0 = 0;
+			while(nlb > 4)
+			{
+				TRIM(slba, blk0, blk1, blk2, blk3);
+				slba = slba + 4;
+				nlb = nlb - 4;
+			}
+
+			blk0 = 1;
+			blk1 = 1;
+			blk2 = 1;
+			blk3 = 1;
+
+			if (nlb == 1)
+			{
+				blk0 = 0;
+			}
+			else if (nlb == 2)
+			{
+				blk0 = 0;
+				blk1 = 0;
+			}
+			else
+			{
+				blk0 = 0;
+				blk1 = 0;
+				blk2 = 0;
+			}
+			TRIM(slba, blk0, blk1, blk2, blk3);
+
+			if (forced == 0)
+			{
+				cmd_by_trim = check_nvme_cmd_come();
+				if(cmd_by_trim == 1)
+				{
+//					xil_printf("new io cmd requested\r\n");
+					return;
+				}
+			}
 		}
-		else if (nlb == 2)
-		{
-			blk0 = 0;
-			blk1 = 0;
-		}
-		else
-		{
-			blk0 = 0;
-			blk1 = 0;
-			blk2 = 0;
-		}
-		TRIM(slba, blk0, blk1, blk2, blk3);
 		dsmRangePtr->head = (dsmRangePtr->head + 1)%3000;
 		nr_sum--;
-
-		if (forced == 0)
-		{
-			cmd_by_trim = check_nvme_cmd_come();
-			if(cmd_by_trim == 1)
-			{
-//				xil_printf("new io cmd requested\r\n");
-				return;
-			}
-		}
 	}
 
 	trim_flag = 0;
