@@ -750,6 +750,7 @@ void IssueNvmeDmaReq(unsigned int reqSlotTag)
 
 void TRIM (unsigned int lba, unsigned int blk0, unsigned int blk1, unsigned int blk2, unsigned int blk3)
 {
+	trim_cnt++;
 	unsigned int lsa, bufEntry;
 	lsa = lba/4;
 
