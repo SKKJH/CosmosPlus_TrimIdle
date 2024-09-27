@@ -147,7 +147,8 @@ typedef struct _REQ_OPTION{
 	unsigned int nandEccWarning : 1;
 	unsigned int rowAddrDependencyCheck : 1;
 	unsigned int blockSpace : 1;
-	unsigned int reserved0 : 24;
+	unsigned int trimDmaFlag : 1;
+	unsigned int reserved0 : 23;
 } REQ_OPTION, *P_REQ_OPTION;
 
 

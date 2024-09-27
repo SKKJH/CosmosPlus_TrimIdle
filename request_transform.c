@@ -107,7 +107,8 @@ void ReqTransNvmeToSliceForDSM(unsigned int cmdSlotTag, unsigned int nr)
 
 void ReqTransNvmeToSlice(unsigned int cmdSlotTag, unsigned int startLba, unsigned int nlb, unsigned int cmdCode)
 {
-	unsigned int reqSlotTag, requestedNvmeBlock, tempNumOfNvmeBlock, transCounter, tempLsa, loop, nvmeBlockOffset, nvmeDmaStartIndex, reqCode;
+	unsigned int dma_proc, slsa, elsa, start_index, end_index, reqSlotTag, requestedNvmeBlock, tempNumOfNvmeBlock, transCounter, tempLsa, loop, nvmeBlockOffset, nvmeDmaStartIndex, reqCode;
+	unsigned long long start_mask, end_mask;
 
 	requestedNvmeBlock = nlb + 1;
 	transCounter = 0;
@@ -116,7 +117,44 @@ void ReqTransNvmeToSlice(unsigned int cmdSlotTag, unsigned int startLba, unsigne
 	loop = ((startLba % NVME_BLOCKS_PER_SLICE) + requestedNvmeBlock) / NVME_BLOCKS_PER_SLICE;
 
 	if(cmdCode == IO_NVM_WRITE)
+	{
 		reqCode = REQ_CODE_WRITE;
+
+		if (nr_sum != 0)
+		{
+			if (trimDmaCnt == 0)
+			{
+				slsa = startLba/4;
+	//			xil_printf("slsa:%d\r\n", slsa);
+	//			xil_printf("nlb:%d\r\n", nlb);
+	//			xil_printf("\n");
+				elsa = (startLba + nlb - 1)/4;
+				start_index = slsa/64;
+				end_index = elsa/64;
+
+				start_mask = ~0ULL << (slsa % 64);
+				end_mask = ~0ULL >> (64 - ((elsa % 64)+1));
+
+				if (start_index == end_index)
+				{
+					asyncTrimBitMapPtr->trimBitMap[start_index] &= ~(start_mask & end_mask);
+				}
+				else
+				{
+					asyncTrimBitMapPtr->trimBitMap[start_index] &= ~start_mask;
+					asyncTrimBitMapPtr->trimBitMap[end_index] &= ~end_mask;
+					while((start_index+1) < end_index)
+					{
+						asyncTrimBitMapPtr->trimBitMap[++start_index] &= 0ULL;
+					}
+				}
+				dma_proc = 0;
+			}
+			else
+				dma_proc = 1;
+		}
+
+	}
 	else if(cmdCode == IO_NVM_READ)
 		reqCode = REQ_CODE_READ;
 	else
@@ -138,6 +176,7 @@ void ReqTransNvmeToSlice(unsigned int cmdSlotTag, unsigned int startLba, unsigne
 	reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.startIndex = nvmeDmaStartIndex;
 	reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.nvmeBlockOffset = nvmeBlockOffset;
 	reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.numOfNvmeBlock = tempNumOfNvmeBlock;
+	reqPoolPtr->reqPool[reqSlotTag].reqOpt.trimDmaFlag = dma_proc;
 
 	if (nvmeBlockOffset == 0)
 	{

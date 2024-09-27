@@ -92,8 +92,7 @@ void handle_nvme_io_write(unsigned int cmdSlotTag, NVME_IO_COMMAND *nvmeIOCmd)
 	//IO_READ_COMMAND_DW13 writeInfo13;
 	//IO_READ_COMMAND_DW15 writeInfo15;
 	unsigned int startLba[2];
-	unsigned int nlb, slsa, elsa, start_index, end_index;
-	unsigned long long start_mask, end_mask;
+	unsigned int nlb;
 
 	writeInfo12.dword = nvmeIOCmd->dword[12];
 	//writeInfo13.dword = nvmeIOCmd->dword[13];
@@ -105,42 +104,6 @@ void handle_nvme_io_write(unsigned int cmdSlotTag, NVME_IO_COMMAND *nvmeIOCmd)
 	startLba[0] = nvmeIOCmd->dword[10];
 	startLba[1] = nvmeIOCmd->dword[11];
 	nlb = writeInfo12.NLB;
-
-//	if (nr_sum != 0)
-//	{
-//		slsa = startLba[0]/4;
-//		xil_printf("slsa:%d\r\n", slsa);
-//		xil_printf("nlb:%d\r\n", nlb);
-//		xil_printf("\n");
-//		elsa = (startLba[0] + nlb - 1)/4;
-////		xil_printf("elsa:%d\r\n",elsa);
-//		start_index = slsa/64;
-////		xil_printf("start_index:%d\r\n",start_index);
-//		end_index = elsa/64;
-////		xil_printf("end_index:%d\r\n",end_index);
-//
-//		start_mask = ~0ULL << (slsa % 64);
-//		end_mask = ~0ULL >> (64 - ((elsa % 64)+1));
-//
-//		if (start_index == end_index)
-//		{
-////			xil_printf("here1\r\n");
-//			asyncTrimBitMapPtr->trimBitMap[start_index] &= ~(start_mask & end_mask);
-//		}
-//		else
-//		{
-////			xil_printf("here2\r\n");
-//			asyncTrimBitMapPtr->trimBitMap[start_index] &= ~start_mask;
-//			asyncTrimBitMapPtr->trimBitMap[end_index] &= ~end_mask;
-//			//for (int i = start_index + 1; i < end_index; i++)
-//			while((start_index+1) < end_index)
-//			{
-////				xil_printf("here3\r\n");
-//				asyncTrimBitMapPtr->trimBitMap[++start_index] &= 0ULL;
-//			}
-//		}
-//	}
-
 
 	ASSERT(startLba[0] < storageCapacity_L && (startLba[1] < STORAGE_CAPACITY_H || startLba[1] == 0));
 	//ASSERT(nlb < MAX_NUM_OF_NLB);
@@ -158,7 +121,7 @@ void handle_nvme_io_dataset_management(unsigned int cmdSlotTag, NVME_IO_COMMAND 
 
 	dsmInfo10.dword = nvmeIOCmd->dword10;
 	dsmInfo11.dword = nvmeIOCmd->dword11;
-
+	trimDmaCnt++;
 	unsigned int nr = dsmInfo10.NR;
 //	xil_printf("num of range: %d\r\n", nr);
 	ad = dsmInfo11.AD;

@@ -77,6 +77,7 @@ void nvme_main()
 	unsigned int exeLlr;
 	unsigned int rstCnt = 0;
 	trim_flag = 0;
+	trimDmaCnt = 0;
 	trim_cnt = 0;
 	gc_cnt = 0;
 	wr_cnt = 0;

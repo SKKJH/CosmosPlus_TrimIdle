@@ -385,9 +385,10 @@ void SelectiveGetFromNvmeDmaReqQ(unsigned int reqSlotTag)
 	{
 		if (reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_DSM)
 		{	//if DMA for trim is done, do trim
+			trimDmaCnt--;
 			PerformDeallocation(reqSlotTag);
 		}
-		else if (reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_WRITE)
+		else if ((reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_WRITE) && (reqPoolPtr->reqPool[reqSlotTag].reqOpt.trimDmaFlag == 1))
 		{
 			int lpn = reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr;
 			long long unsigned mask = ~(1ULL << lpn%64);
