@@ -123,7 +123,7 @@ void handle_nvme_io_dataset_management(unsigned int cmdSlotTag, NVME_IO_COMMAND 
 	dsmInfo11.dword = nvmeIOCmd->dword11;
 	trimDmaCnt++;
 	unsigned int nr = dsmInfo10.NR;
-//	xil_printf("num of range: %d\r\n", nr);
+//	xil_printf("Request here, num of range: %d\r\n", nr);
 	ad = dsmInfo11.AD;
 
 	if (ad==1)
@@ -150,7 +150,7 @@ void handle_asyncTrim(int forced)
 		nlb = dsmRangePtr->dmRange[head].lengthInLogicalBlocks;
 //		xil_printf("nlb : %d\r\n",nlb);
 //		xil_printf("slba : %d\r\n",slba);
-		if((nlb>0)&&(slba>0)&&(nlb<(SLICES_PER_SSD * 4))&&(slba<(SLICES_PER_SSD * 4)))
+		if((nlb>0)&&(slba>=0)&&(nlb<(SLICES_PER_SSD * 4))&&(slba<(SLICES_PER_SSD * 4)))
 		{
 			if ((slba % 4) == 0)
 			{
