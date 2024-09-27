@@ -125,9 +125,9 @@ void ReqTransNvmeToSlice(unsigned int cmdSlotTag, unsigned int startLba, unsigne
 			if (trimDmaCnt == 0)
 			{
 				slsa = startLba/4;
-	//			xil_printf("slsa:%d\r\n", slsa);
-	//			xil_printf("nlb:%d\r\n", nlb);
-	//			xil_printf("\n");
+				xil_printf("slsa:%d\r\n", slsa);
+				xil_printf("nlb:%d\r\n", nlb);
+				xil_printf("\n");
 				elsa = (startLba + nlb - 1)/4;
 				start_index = slsa/64;
 				end_index = elsa/64;
@@ -147,6 +147,7 @@ void ReqTransNvmeToSlice(unsigned int cmdSlotTag, unsigned int startLba, unsigne
 					{
 						asyncTrimBitMapPtr->trimBitMap[++start_index] &= 0ULL;
 					}
+
 				}
 				dma_proc = 0;
 			}
@@ -259,6 +260,7 @@ void ReqTransNvmeToSlice(unsigned int cmdSlotTag, unsigned int startLba, unsigne
 		reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.startIndex = nvmeDmaStartIndex;
 		reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.nvmeBlockOffset = nvmeBlockOffset;
 		reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.numOfNvmeBlock = tempNumOfNvmeBlock;
+		reqPoolPtr->reqPool[reqSlotTag].reqOpt.trimDmaFlag = dma_proc;
 		reqPoolPtr->reqPool[reqSlotTag].blk0 = 1;
 		reqPoolPtr->reqPool[reqSlotTag].blk1 = 1;
 		reqPoolPtr->reqPool[reqSlotTag].blk2 = 1;
@@ -286,6 +288,7 @@ void ReqTransNvmeToSlice(unsigned int cmdSlotTag, unsigned int startLba, unsigne
 	reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.startIndex = nvmeDmaStartIndex;
 	reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.nvmeBlockOffset = nvmeBlockOffset;
 	reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.numOfNvmeBlock = tempNumOfNvmeBlock;
+	reqPoolPtr->reqPool[reqSlotTag].reqOpt.trimDmaFlag = dma_proc;
 
 	if (tempNumOfNvmeBlock == 1)
 	{
