@@ -62,7 +62,8 @@
 #define FindDataBufHashTableEntry(logicalSliceAddr) ((logicalSliceAddr) % AVAILABLE_DATA_BUFFER_ENTRY_COUNT)
 
 typedef struct _ASYNC_TRIM_BIT_MAP {
-	unsigned long long trimBitMap[BITMAP_SIZE];
+//	unsigned long long trimBitMap[BITMAP_SIZE];
+	unsigned long long writeBitMap[BITMAP_SIZE];
 } ASYNC_TRIM_BIT_MAP, *P_ASYNC_TRIM_BIT_MAP;
 
 typedef struct _DATA_BUF_ENTRY {

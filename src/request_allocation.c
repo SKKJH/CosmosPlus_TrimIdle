@@ -388,13 +388,13 @@ void SelectiveGetFromNvmeDmaReqQ(unsigned int reqSlotTag)
 			trimDmaCnt--;
 			PerformDeallocation(reqSlotTag);
 		}
-		else if ((reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_WRITE) && (reqPoolPtr->reqPool[reqSlotTag].reqOpt.trimDmaFlag == 1))
-		{
-			int lpn = reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr;
-			long long unsigned mask = ~(1ULL << lpn%64);
-			asyncTrimBitMapPtr->trimBitMap[lpn/64] &= mask;
+//		else if ((reqPoolPtr->reqPool[reqSlotTag].reqCode == REQ_CODE_WRITE) && (reqPoolPtr->reqPool[reqSlotTag].reqOpt.trimDmaFlag == 1))
+//		{
+//			int lpn = reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr;
+//			long long unsigned mask = ~(1ULL << lpn%64);
+//			asyncTrimBitMapPtr->trimBitMap[lpn/64] &= mask;
 
-		}
+//		}
 	}
 
 	PutToFreeReqQ(reqSlotTag);

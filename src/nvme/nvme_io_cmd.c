@@ -122,8 +122,8 @@ void handle_nvme_io_dataset_management(unsigned int cmdSlotTag, NVME_IO_COMMAND 
 	dsmInfo10.dword = nvmeIOCmd->dword10;
 	dsmInfo11.dword = nvmeIOCmd->dword11;
 	trimDmaCnt++;
-	unsigned int nr = dsmInfo10.NR;
-//	xil_printf("Request here, num of range: %d\r\n", nr);
+	unsigned int nr = dsmInfo10.NR + 1;
+	xil_printf("Request here, num of range: %d\r\n", nr);
 	ad = dsmInfo11.AD;
 
 	if (ad==1)
@@ -144,12 +144,16 @@ void handle_asyncTrim(int forced)
 
 	for (int i=0; i<temp; i++)
 	{
-//		xil_printf("nr_sum : %d\r\n",nr_sum);
 		head = dsmRangePtr->head;
 		slba = dsmRangePtr->dmRange[head].startingLBA[0];
 		nlb = dsmRangePtr->dmRange[head].lengthInLogicalBlocks;
-//		xil_printf("nlb : %d\r\n",nlb);
-//		xil_printf("slba : %d\r\n",slba);
+		blk0 = 1;
+		blk1 = 1;
+		blk2 = 1;
+		blk3 = 1;
+		xil_printf("nr_sum : %d\r\n",nr_sum);
+		xil_printf("nlb : %d\r\n",nlb);
+		xil_printf("slba : %d\r\n",slba);
 		if((nlb>0)&&(slba>=0)&&(nlb<(SLICES_PER_SSD * 4))&&(slba<(SLICES_PER_SSD * 4)))
 		{
 			if ((slba % 4) == 0)
@@ -215,7 +219,7 @@ void handle_asyncTrim(int forced)
 
 			while(nlb > 4)
 			{
-				TRIM(slba, blk0, blk1, blk2, blk3);
+				TRIM(slba, 0, 0, 0, 0);
 				slba = slba + 4;
 				nlb = nlb - 4;
 			}
@@ -234,12 +238,20 @@ void handle_asyncTrim(int forced)
 				blk0 = 0;
 				blk1 = 0;
 			}
-			else
+			else if (nlb == 3)
 			{
 				blk0 = 0;
 				blk1 = 0;
 				blk2 = 0;
 			}
+			else
+			{
+				blk0 = 0;
+				blk1 = 0;
+				blk2 = 0;
+				blk3 = 0;
+			}
+
 			TRIM(slba, blk0, blk1, blk2, blk3);
 
 			if (forced == 0)

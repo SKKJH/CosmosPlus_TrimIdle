@@ -78,7 +78,7 @@ void InitDataBuf()
 
 	for (int i = 0; i < BITMAP_SIZE; i++)
 	{
-		asyncTrimBitMapPtr->trimBitMap[i] = 0ULL;
+		asyncTrimBitMapPtr->writeBitMap[i] = 0ULL;
 	}
 
 	for(bufEntry = 0; bufEntry < AVAILABLE_DATA_BUFFER_ENTRY_COUNT; bufEntry++)
