@@ -817,10 +817,9 @@ void TRIM (unsigned int lba, unsigned int blk0, unsigned int blk1, unsigned int 
 	if (asyncTrimBitMapPtr->writeBitMap[lsa/64] & (1ULL << (lsa % 64)))
 		return;
 
-	xil_printf("LSA %d will be checked\r\n",lsa);
-	if ((blk0 == 0)&&(blk1 == 0)&&(blk2 == 0)&&(blk3 == 0))
-		xil_printf("LSA %d will be trimed\r\n",lsa);
-
+//	xil_printf("LSA %d will be checked\r\n",lsa);
+//	if ((blk0 == 0)&&(blk1 == 0)&&(blk2 == 0)&&(blk3 == 0))
+//		xil_printf("LSA %d will be trimed\r\n",lsa);
 
 	bufEntry = CheckDataBufHitbyLSA(lsa);
 	if (bufEntry != DATA_BUF_FAIL)
@@ -978,13 +977,11 @@ void TRIM (unsigned int lba, unsigned int blk0, unsigned int blk1, unsigned int 
 
 void PerformDeallocation(unsigned int reqSlotTag)
 {
-    unsigned int temp;
     int tempval, tempval2;
     unsigned int tail = dsmRangePtr->tail;
     unsigned int *devAddr = (unsigned int*)GenerateDataBufAddr(reqSlotTag);
     unsigned int nr = reqPoolPtr->reqPool[reqSlotTag].nvmeDmaInfo.nr;
 
-    temp = tail;
     for (int i = 0; i < nr; i++)
     {
         tempval = *(devAddr + 1);

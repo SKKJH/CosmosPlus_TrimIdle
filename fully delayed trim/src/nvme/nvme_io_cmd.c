@@ -123,7 +123,7 @@ void handle_nvme_io_dataset_management(unsigned int cmdSlotTag, NVME_IO_COMMAND 
 	dsmInfo11.dword = nvmeIOCmd->dword11;
 	trimDmaCnt++;
 	unsigned int nr = dsmInfo10.NR + 1;
-	xil_printf("Request here, num of range: %d\r\n", nr);
+//	xil_printf("Request here, num of range: %d\r\n", nr);
 	ad = dsmInfo11.AD;
 
 	if (ad==1)
@@ -139,8 +139,12 @@ void handle_nvme_io_dataset_management(unsigned int cmdSlotTag, NVME_IO_COMMAND 
 void handle_asyncTrim(int forced)
 {
 	int blk0, blk1, blk2, blk3, tempSlba , tempNlb;
-	int head, nlb, slba;
-	int temp = nr_sum;
+	int head, nlb, slba, temp;
+
+	if ((forced == 1) && (nr_sum > 10))
+		temp = 10;
+	else
+		temp = nr_sum;
 
 	for (int i=0; i<temp; i++)
 	{
@@ -151,9 +155,11 @@ void handle_asyncTrim(int forced)
 		blk1 = 1;
 		blk2 = 1;
 		blk3 = 1;
-		xil_printf("nr_sum : %d\r\n",nr_sum);
-		xil_printf("nlb : %d\r\n",nlb);
-		xil_printf("slba : %d\r\n",slba);
+
+//		xil_printf("nr_sum : %d\r\n",nr_sum);
+//		xil_printf("nlb : %d\r\n",nlb);
+//		xil_printf("slba : %d\r\n",slba);
+
 		if((nlb>0)&&(slba>=0)&&(nlb<(SLICES_PER_SSD * 4))&&(slba<(SLICES_PER_SSD * 4)))
 		{
 			if ((slba % 4) == 0)
@@ -309,6 +315,14 @@ void handle_nvme_io_cmd(NVME_COMMAND *nvmeCmd)
 		{
 //			xil_printf("IO Dataset Management Command\r\n");
 			handle_nvme_io_dataset_management(nvmeCmd->cmdSlotTag, nvmeIOCmd);
+			break;
+		}
+		case IO_NVM_WRITE_ZEROS:
+		{
+//			xil_printf("IO Write Zeros Command\r\n");
+			nvmeCPL.dword[0] = 0;
+			nvmeCPL.specific = 0x0;
+			set_auto_nvme_cpl(nvmeCmd->cmdSlotTag, nvmeCPL.specific, nvmeCPL.statusFieldWord);
 			break;
 		}
 		default:

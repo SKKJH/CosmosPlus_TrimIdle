@@ -203,15 +203,15 @@ void nvme_main()
 			SchedulingNandReq();
 		}
 
-		if(trim_flag != 0)
-		{
-			time_cnt++;
-			if (time_cnt == 10)
-			{
-				time_cnt = 0;
-				handle_asyncTrim(0);
-			}
-		}
+//		if(trim_flag != 0)
+//		{
+//			time_cnt++;
+//			if (time_cnt == 20000000)
+//			{
+//				time_cnt = 0;
+//				handle_asyncTrim(0);
+//			}
+//		}
 	}
 }
 

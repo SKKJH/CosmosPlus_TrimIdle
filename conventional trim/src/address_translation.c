@@ -701,11 +701,7 @@ unsigned int FindFreeVirtualSlice()
 		else
 		{
 			if(trim_flag != 0)
-			{
-//				xil_printf("gc trim start\r\n");
-				handle_asyncTrim(1);
-//				xil_printf("gc trim end\r\n");
-			}
+				handle_asyncTrim(0);
 
 			GarbageCollection(dieNo);
 			currentBlock = virtualDieMapPtr->die[dieNo].currentBlock;
